@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Overlay Brawl Stars - Stats</title>
+  <style>
+    body {
+      background: transparent;
+      font-family: 'Trebuchet MS', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 20px;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      background: url('https://i.imgur.com/8o7rkX1.png'); /* texture bois (remplaçable) */
+      background-size: cover;
+      border: 4px solid #8b5a2b;
+      border-radius: 10px;
+      padding: 10px 20px;
+      color: #f1c27d;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+      min-width: 350px;
+    }
+
+    .card span.icon {
+      width: 40px;
+      height: 40px;
+      font-size: 28px;
+      margin-right: 16px;
+    }
+
+    .value {
+      color: #ffe8b0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <span class="icon">🏆</span>
+    Trophées : <span class="value" id="trophies">...</span>
+  </div>
+
+  <div class="card">
+    <span class="icon">👥</span>
+    Club : <span class="value" id="club">...</span>
+  </div>
+
+  <div class="card">
+    <span class="icon">🔥</span>
+    Winstreak : <span class="value" id="winstreak">...</span>
+  </div>
+
+  <script>
+    async function fetchPlayerTag() {
+      const res = await fetch('/api/tag');
+      const data = await res.json();
+      return data.tag;
+    }
+
+    async function fetchStats(tag) {
+      const res = await fetch(`/api/stats/${encodeURIComponent(tag)}`);
+      return await res.json();
+    }
+
+    async function fetchWinstreak(tag) {
+      const res = await fetch(`/api/winstreak/${encodeURIComponent(tag)}`);
+      return await res.json();
+    }
+
+    async function updateOverlay() {
+      try {
+        const tag = await fetchPlayerTag();
+        const stats = await fetchStats(tag);
+        const streak = await fetchWinstreak(tag);
+
+        document.getElementById('trophies').textContent = stats.trophies;
+        document.getElementById('club').textContent = stats.club?.name || "Aucun";
+        document.getElementById('winstreak').textContent = `${streak.current} / record ${streak.best}`;
+      } catch (err) {
+        console.error("Erreur de chargement de l'overlay :", err);
+      }
+    }
+
+    updateOverlay();
+    setInterval(updateOverlay, 5000);
+  </script>
+
+</body>
+</html>
