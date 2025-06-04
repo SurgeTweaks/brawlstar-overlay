@@ -1,0 +1,7 @@
+module.exports = {
+    apiToken: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6ImMyOTM1NmIyLWI4OTEtNGI2Ny04ZjViLTE2YjYwMTE3MWMyZSIsImlhdCI6MTc0OTAyNTIwMywic3ViIjoiZGV2ZWxvcGVyLzBkMjIzMGVjLTBmM2UtZDc5ZS0xZGJiLTg4OTVmNzcyMWEyOSIsInNjb3BlcyI6WyJicmF3bHN0YXJzIl0sImxpbWl0cyI6W3sidGllciI6ImRldmVsb3Blci9zaWx2ZXIiLCJ0eXBlIjoidGhyb3R0bGluZyJ9LHsiY2lkcnMiOlsiMTkzLjE4Ni40LjU1IiwiODAuMjE1LjE5NC4xNSJdLCJ0eXBlIjoiY2xpZW50In1dfQ.AStvX8Iqt3fPqGorpk4RXAau55b_6_9gV7fgRTpu_hSRnL_NqPeA4dbtcxc0fKrUcKHVL0MCvBHV8aqX1DtQMw',
+    baseUrl: 'https://api.brawlstars.com/v1/players/',
+    defaultPlayerTag: '#LUP292RV',
+    port: 3000
+  };
+  

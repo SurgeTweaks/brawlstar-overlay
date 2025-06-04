@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Overlay Brawl Stars</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      color: white;
+      background: transparent;
+    }
+
+    #overlay {
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 12px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="overlay">Chargement des stats...</div>
+
+  <script>
+    const playerTag = '#LUP292RV';
+    const encodedTag = encodeURIComponent(playerTag);
+    let previousTrophies = null;
+    let winstreak = 0;
+
+    async function fetchStats() {
+      try {
+        const res = await fetch(`http://localhost:3000/api/stats/${encodedTag}`);
+        const data = await res.json();
+
+        if (data.name) {
+          const currentTrophies = data.trophies;
+          let deltaText = '';
+
+          if (previousTrophies !== null) {
+            const delta = currentTrophies - previousTrophies;
+            if (delta > 0) {
+              winstreak += 1;
+              deltaText = ` <span style="color:lightgreen;">(+${delta})</span>`;
+            } else if (delta < 0) {
+              winstreak = 0;
+              deltaText = ` <span style="color:crimson;">(${delta})</span>`;
+            } else {
+              deltaText = ` <span style="color:gray;">(=)</span>`;
+            }
+          }
+
+          previousTrophies = currentTrophies;
+
+          document.getElementById('overlay').innerHTML = `
+            <strong>${data.name}</strong><br>
+            🏆 Trophées: ${currentTrophies}${deltaText}<br>
+            🔥 Winstreak: ${winstreak}<br>
+            🎖 Niveau: ${data.expLevel}<br>
+            👥 Club: ${data.club?.name || 'Aucun'}
+          `;
+        } else {
+          document.getElementById('overlay').innerText = "Erreur chargement stats";
+        }
+      } catch (err) {
+        console.error("Erreur fetch:", err);
+        document.getElementById('overlay').innerText = "Erreur de connexion";
+      }
+    }
+
+    fetchStats();
+    setInterval(fetchStats, 5000);
+
+  </script>
+</body>
+
+</html>
