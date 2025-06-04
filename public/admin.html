@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Changer le Tag</title>
+</head>
+<body>
+  <h1>Modifier le Player Tag</h1>
+  <input type="text" id="tagInput" placeholder="#XXXXXXX" />
+  <button onclick="updateTag()">Mettre à jour</button>
+  <p id="status"></p>
+
+  <script>
+    async function updateTag() {
+      const tag = document.getElementById('tagInput').value;
+      const res = await fetch('/api/tag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag })
+      });
+
+      const result = await res.json();
+      document.getElementById('status').innerText = result.success 
+        ? "✅ Tag mis à jour !" 
+        : "❌ Erreur : " + (result.error || "inconnue");
+    }
+  </script>
+</body>
+</html>

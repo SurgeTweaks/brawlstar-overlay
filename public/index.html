@@ -24,12 +24,21 @@
   <div id="overlay">Chargement des stats...</div>
 
   <script>
-    const playerTag = '#LUP292RV';
-    const encodedTag = encodeURIComponent(playerTag);
+    let playerTag = null;
+    let encodedTag = null;
     let previousTrophies = null;
     let winstreak = 0;
 
+    async function fetchPlayerTag() {
+      const res = await fetch('/api/tag');
+      const data = await res.json();
+      playerTag = data.tag;
+      encodedTag = encodeURIComponent(playerTag); // ✅ maintenant que playerTag est chargé
+    }
+
     async function fetchStats() {
+      if (!encodedTag) return;
+
       try {
         const res = await fetch(`/api/stats/${encodedTag}`);
         const data = await res.json();
@@ -69,10 +78,11 @@
       }
     }
 
+    await fetchPlayerTag();
     fetchStats();
     setInterval(fetchStats, 5000);
-
   </script>
+
 </body>
 
 </html>
