@@ -31,7 +31,7 @@
 
     async function fetchStats() {
       try {
-        const res = await fetch(`http://localhost:3000/api/stats/${encodedTag}`);
+        const res = await fetch(`/api/stats/${encodedTag}`);
         const data = await res.json();
 
         if (data.name) {
