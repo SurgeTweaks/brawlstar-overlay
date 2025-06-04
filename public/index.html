@@ -17,6 +17,11 @@
       border-radius: 12px;
       font-size: 20px;
     }
+
+    .winstreak-reset {
+      color: red;
+      transition: color 0.5s ease;
+    }
   </style>
 </head>
 
@@ -27,7 +32,12 @@
     let playerTag = null;
     let encodedTag = null;
     let previousTrophies = null;
-    let winstreak = 0;
+
+    // win streaks par tag
+    const winstreakMap = {};
+
+    // reset visuel après défaite
+    let defeatFlashTimeout = null;
 
     async function fetchPlayerTag() {
       const res = await fetch('/api/tag');
@@ -43,8 +53,8 @@
           playerTag = newTag;
           encodedTag = encodeURIComponent(playerTag);
           previousTrophies = null;
-          winstreak = 0;
-          console.log(`🎯 Tag mis à jour dynamiquement : ${playerTag}`);
+          if (!(playerTag in winstreakMap)) winstreakMap[playerTag] = 0;
+          console.log(`🎯 Tag actif : ${playerTag}`);
         }
 
         const res = await fetch(`/api/stats/${encodedTag}`);
@@ -53,14 +63,18 @@
         if (data.name) {
           const currentTrophies = data.trophies;
           let deltaText = '';
+          let winstreakText = '';
+          let lost = false;
 
           if (previousTrophies !== null) {
             const delta = currentTrophies - previousTrophies;
+
             if (delta > 0) {
-              winstreak += 1;
+              winstreakMap[playerTag] += 1;
               deltaText = ` <span style="color:lightgreen;">(+${delta})</span>`;
             } else if (delta < 0) {
-              winstreak = 0;
+              winstreakMap[playerTag] = 0;
+              lost = true;
               deltaText = ` <span style="color:crimson;">(${delta})</span>`;
             } else {
               deltaText = ` <span style="color:gray;">(=)</span>`;
@@ -69,13 +83,27 @@
 
           previousTrophies = currentTrophies;
 
+          winstreakText = `<span id="winstreak" ${lost ? 'class="winstreak-reset"' : ''}>
+            🔥 Winstreak: ${winstreakMap[playerTag]}
+          </span>`;
+
           document.getElementById('overlay').innerHTML = `
             <strong>${data.name}</strong><br>
             🏆 Trophées: ${currentTrophies}${deltaText}<br>
-            🔥 Winstreak: ${winstreak}<br>
+            ${winstreakText}<br>
             🎖 Niveau: ${data.expLevel}<br>
             👥 Club: ${data.club?.name || 'Aucun'}
           `;
+
+          // Retirer le rouge après 5 secondes
+          if (lost && defeatFlashTimeout === null) {
+            defeatFlashTimeout = setTimeout(() => {
+              const el = document.getElementById('winstreak');
+              if (el) el.classList.remove('winstreak-reset');
+              defeatFlashTimeout = null;
+            }, 5000);
+          }
+
         } else {
           document.getElementById('overlay').innerText = "Erreur chargement stats";
         }
@@ -85,7 +113,6 @@
       }
     }
 
-    // rafraîchissement toutes les 5 secondes
     fetchStats();
     setInterval(fetchStats, 5000);
   </script>
