@@ -32,14 +32,21 @@
     async function fetchPlayerTag() {
       const res = await fetch('/api/tag');
       const data = await res.json();
-      playerTag = data.tag;
-      encodedTag = encodeURIComponent(playerTag); // ✅ maintenant que playerTag est chargé
+      return data.tag;
     }
 
     async function fetchStats() {
-      if (!encodedTag) return;
-
       try {
+        const newTag = await fetchPlayerTag();
+
+        if (newTag !== playerTag) {
+          playerTag = newTag;
+          encodedTag = encodeURIComponent(playerTag);
+          previousTrophies = null;
+          winstreak = 0;
+          console.log(`🎯 Tag mis à jour dynamiquement : ${playerTag}`);
+        }
+
         const res = await fetch(`/api/stats/${encodedTag}`);
         const data = await res.json();
 
@@ -78,16 +85,10 @@
       }
     }
 
-    async function init() {
-      await fetchPlayerTag();
-      fetchStats();
-      setInterval(fetchStats, 5000);
-    }
-
-    init();
-
+    // rafraîchissement toutes les 5 secondes
+    fetchStats();
+    setInterval(fetchStats, 5000);
   </script>
-
 </body>
 
 </html>
