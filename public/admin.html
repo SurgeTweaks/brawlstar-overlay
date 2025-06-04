@@ -5,12 +5,29 @@
   <title>Changer le Tag</title>
 </head>
 <body>
-  <h1>Modifier le Player Tag</h1>
-  <input type="text" id="tagInput" placeholder="#XXXXXXX" />
-  <button onclick="updateTag()">Mettre à jour</button>
-  <p id="status"></p>
+  <h1>🔒 Accès Admin</h1>
+  <input type="password" id="pwd" placeholder="Mot de passe" />
+  <button onclick="unlock()">Connexion</button>
+
+  <div id="admin" style="display:none;">
+    <h2>Modifier le Player Tag</h2>
+    <input type="text" id="tagInput" placeholder="#XXXXXXX" />
+    <button onclick="updateTag()">Mettre à jour</button>
+    <p id="status"></p>
+  </div>
 
   <script>
+    const motDePasse = "overlay123"; // change-le si tu veux
+
+    function unlock() {
+      const v = document.getElementById('pwd').value;
+      if (v === motDePasse) {
+        document.getElementById('admin').style.display = 'block';
+      } else {
+        alert("Mot de passe incorrect");
+      }
+    }
+
     async function updateTag() {
       const tag = document.getElementById('tagInput').value;
       const res = await fetch('/api/tag', {

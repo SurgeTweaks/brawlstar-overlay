@@ -32,17 +32,26 @@
     let playerTag = null;
     let encodedTag = null;
     let previousTrophies = null;
-
-    // win streaks par tag
-    const winstreakMap = {};
-
-    // reset visuel après défaite
+    let winstreakData = { current: 0, best: 0 };
     let defeatFlashTimeout = null;
 
     async function fetchPlayerTag() {
       const res = await fetch('/api/tag');
       const data = await res.json();
       return data.tag;
+    }
+
+    async function fetchWinstreak(tag) {
+      const res = await fetch(`/api/winstreak/${encodeURIComponent(tag)}`);
+      return await res.json();
+    }
+
+    async function saveWinstreak(tag, current) {
+      await fetch(`/api/winstreak/${encodeURIComponent(tag)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current })
+      });
     }
 
     async function fetchStats() {
@@ -53,7 +62,7 @@
           playerTag = newTag;
           encodedTag = encodeURIComponent(playerTag);
           previousTrophies = null;
-          if (!(playerTag in winstreakMap)) winstreakMap[playerTag] = 0;
+          winstreakData = await fetchWinstreak(playerTag);
           console.log(`🎯 Tag actif : ${playerTag}`);
         }
 
@@ -63,17 +72,15 @@
         if (data.name) {
           const currentTrophies = data.trophies;
           let deltaText = '';
-          let winstreakText = '';
           let lost = false;
 
           if (previousTrophies !== null) {
             const delta = currentTrophies - previousTrophies;
-
             if (delta > 0) {
-              winstreakMap[playerTag] += 1;
+              winstreakData.current += 1;
               deltaText = ` <span style="color:lightgreen;">(+${delta})</span>`;
             } else if (delta < 0) {
-              winstreakMap[playerTag] = 0;
+              winstreakData.current = 0;
               lost = true;
               deltaText = ` <span style="color:crimson;">(${delta})</span>`;
             } else {
@@ -83,19 +90,23 @@
 
           previousTrophies = currentTrophies;
 
-          winstreakText = `<span id="winstreak" ${lost ? 'class="winstreak-reset"' : ''}>
-            🔥 Winstreak: ${winstreakMap[playerTag]}
+          // Sauvegarder côté serveur
+          await saveWinstreak(playerTag, winstreakData.current);
+
+          const bestDisplay = `🏆 Record: ${winstreakData.best = Math.max(winstreakData.current, winstreakData.best)}`;
+          const streakDisplay = `<span id="winstreak" ${lost ? 'class="winstreak-reset"' : ''}>
+            🔥 Winstreak: ${winstreakData.current}
           </span>`;
 
           document.getElementById('overlay').innerHTML = `
             <strong>${data.name}</strong><br>
             🏆 Trophées: ${currentTrophies}${deltaText}<br>
-            ${winstreakText}<br>
+            ${streakDisplay} / ${bestDisplay}<br>
             🎖 Niveau: ${data.expLevel}<br>
             👥 Club: ${data.club?.name || 'Aucun'}
           `;
 
-          // Retirer le rouge après 5 secondes
+          // Flash rouge temporaire
           if (lost && defeatFlashTimeout === null) {
             defeatFlashTimeout = setTimeout(() => {
               const el = document.getElementById('winstreak');
