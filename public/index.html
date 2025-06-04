@@ -78,9 +78,14 @@
       }
     }
 
-    await fetchPlayerTag();
-    fetchStats();
-    setInterval(fetchStats, 5000);
+    async function init() {
+      await fetchPlayerTag();
+      fetchStats();
+      setInterval(fetchStats, 5000);
+    }
+
+    init();
+
   </script>
 
 </body>
