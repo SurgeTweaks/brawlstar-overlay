@@ -1,44 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 
 <head>
   <meta charset="UTF-8">
   <title>Overlay Brawl Stars</title>
   <style>
     body {
-      font-family: sans-serif;
-      color: white;
       background: transparent;
+      font-family: 'Trebuchet MS', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 20px;
     }
 
-    #overlay {
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.6);
+    .card {
+      display: flex;
+      align-items: center;
+      background-color: #e67700;
       border-radius: 12px;
-      font-size: 20px;
+      padding: 12px 20px;
+      color: #fff4d6;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+      min-width: 340px;
+      animation: fadeIn 0.6s ease;
     }
 
-    .winstreak-reset {
-      color: red;
-      transition: color 0.5s ease;
+    .card span.icon {
+      width: 34px;
+      text-align: center;
+      margin-right: 14px;
+      font-size: 24px;
+    }
+
+    .value {
+      color: #fff;
+      margin-left: 6px;
+      transition: all 0.3s ease;
+    }
+
+    #qrcode img {
+      margin-left: 10px;
+      width: 80px;
+      height: 80px;
+      animation: pulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.9;
+      }
+
+      50% {
+        transform: scale(1.05);
+        opacity: 1;
+      }
+    }
+
+    @keyframes bump {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.25);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .bump {
+      animation: bump 0.3s ease-in-out;
     }
   </style>
 </head>
 
 <body>
-  <div id="overlay">Chargement des stats...</div>
 
+  <div class="card">
+    <span class="icon">🏆</span>
+    Trophées : <span class="value" id="trophies">...</span>
+  </div>
+
+  <div class="card">
+    <span class="icon">👥</span>
+    Club : <span class="value" id="club">...</span>
+  </div>
+
+  <div class="card">
+    <span class="icon">🔥</span>
+    Winstreak : <span class="value" id="winstreak">...</span>
+  </div>
+
+  <div class="card">
+    <span class="icon">📲</span>
+    Télécharger : <span class="value" id="qrcode">QR...</span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
-    let playerTag = null;
-    let encodedTag = null;
     let previousTrophies = null;
-    let winstreakData = { current: 0, best: 0, lastTrophies: null };
-    let defeatFlashTimeout = null;
 
-    async function fetchPlayerTag() {
+    async function fetchTag() {
       const res = await fetch('/api/tag');
       const data = await res.json();
       return data.tag;
+    }
+
+    async function fetchStats(tag) {
+      const res = await fetch(`/api/stats/${encodeURIComponent(tag)}`);
+      return await res.json();
     }
 
     async function fetchWinstreak(tag) {
@@ -46,82 +137,42 @@
       return await res.json();
     }
 
-    async function saveTrophies(tag, trophies) {
-      const res = await fetch(`/api/winstreak/${encodeURIComponent(tag)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newTrophies: trophies })
-      });
-      return await res.json();
+    function animateTrophiesChange() {
+      const el = document.getElementById('trophies');
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 300);
     }
 
-    async function fetchStats() {
+    async function updateOverlay() {
       try {
-        const newTag = await fetchPlayerTag();
+        const tag = await fetchTag();
+        const stats = await fetchStats(tag);
+        const streak = await fetchWinstreak(tag);
 
-        if (newTag !== playerTag) {
-          playerTag = newTag;
-          encodedTag = encodeURIComponent(playerTag);
-          winstreakData = await fetchWinstreak(playerTag);
-          previousTrophies = winstreakData.lastTrophies;
+        const trophiesEl = document.getElementById('trophies');
+        if (previousTrophies !== null && stats.trophies !== previousTrophies) {
+          animateTrophiesChange();
         }
+        previousTrophies = stats.trophies;
+        trophiesEl.textContent = stats.trophies;
 
-        const res = await fetch(`/api/stats/${encodedTag}`);
-        const data = await res.json();
+        document.getElementById('club').textContent = stats.club?.name || "Aucun";
+        document.getElementById('winstreak').textContent = `${streak.current} / record ${streak.best}`;
 
-        if (data.name) {
-          const currentTrophies = data.trophies;
-          let deltaText = '';
-          let lost = false;
-
-          if (previousTrophies !== null) {
-            const delta = currentTrophies - previousTrophies;
-            if (delta > 0) {
-              deltaText = ` <span style="color:lightgreen;">(+${delta})</span>`;
-            } else if (delta < 0) {
-              deltaText = ` <span style="color:crimson;">(${delta})</span>`;
-              lost = true;
-            } else {
-              deltaText = ` <span style="color:gray;">(=)</span>`;
-            }
+        const brawlStarsURL = "https://supercell.com/en/games/brawlstars/";
+        QRCode.toDataURL(brawlStarsURL, { width: 100 }, function (err, url) {
+          if (!err) {
+            document.getElementById('qrcode').innerHTML = `<img src="${url}" alt="QR Code vers Brawl Stars"/>`;
           }
+        });
 
-          previousTrophies = currentTrophies;
-
-          winstreakData = await saveTrophies(playerTag, currentTrophies);
-
-          const bestDisplay = `🏆 Record: ${winstreakData.best}`;
-          const streakDisplay = `<span id="winstreak" ${lost ? 'class="winstreak-reset"' : ''}>
-            🔥 Winstreak: ${winstreakData.current}
-          </span>`;
-
-          document.getElementById('overlay').innerHTML = `
-            <strong>${data.name}</strong><br>
-            🏆 Trophées: ${currentTrophies}${deltaText}<br>
-            ${streakDisplay} / ${bestDisplay}<br>
-            🎖 Niveau: ${data.expLevel}<br>
-            👥 Club: ${data.club?.name || 'Aucun'}
-          `;
-
-          if (lost && defeatFlashTimeout === null) {
-            defeatFlashTimeout = setTimeout(() => {
-              const el = document.getElementById('winstreak');
-              if (el) el.classList.remove('winstreak-reset');
-              defeatFlashTimeout = null;
-            }, 5000);
-          }
-
-        } else {
-          document.getElementById('overlay').innerText = "Erreur chargement stats";
-        }
       } catch (err) {
-        console.error("Erreur fetch:", err);
-        document.getElementById('overlay').innerText = "Erreur de connexion";
+        console.error("Erreur overlay:", err);
       }
     }
 
-    fetchStats();
-    setInterval(fetchStats, 5000);
+    updateOverlay();
+    setInterval(updateOverlay, 5000);
   </script>
 </body>
 
