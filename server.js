@@ -8,7 +8,7 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_KEY_JSON);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://TON-PROJET-ID.firebaseio.com' // remplace ici
+  databaseURL: 'https://brawlstars-overlay-default-rtdb.europe-west1.firebasedatabase.app'
 });
 
 const db = admin.database();
@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
-const API_KEY = 'VOTRE_CLÉ_API_BRAWLSTARS';
+const API_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6IjZhMTkzNzc2LTFkZGQtNDVjOC04Nzg5LTU4YmM5YTYwOWYyYiIsImlhdCI6MTc0OTAzODg1NCwic3ViIjoiZGV2ZWxvcGVyLzBkMjIzMGVjLTBmM2UtZDc5ZS0xZGJiLTg4OTVmNzcyMWEyOSIsInNjb3BlcyI6WyJicmF3bHN0YXJzIl0sImxpbWl0cyI6W3sidGllciI6ImRldmVsb3Blci9zaWx2ZXIiLCJ0eXBlIjoidGhyb3R0bGluZyJ9LHsiY2lkcnMiOlsiMC4wLjAuMCIsIjgwLjIxNS4xOTQuMTUiLCI1Mi41OS4xMDMuNTQiXSwidHlwZSI6ImNsaWVudCJ9XX0.aIkJE4GTzAqRHdoRSBr_PlcpC04nwYbTYpxVzpkCVSdkoW3kYQoDSO4v1uqOKiVSn59FJXKH942zfTv1OwRyxQ';
 
 async function getPlayerData(tag) {
   const url = `https://api.brawlstars.com/v1/players/${encodeURIComponent(tag)}`;
