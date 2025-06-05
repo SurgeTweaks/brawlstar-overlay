@@ -39,7 +39,7 @@
         .value {
             color: #fff;
             margin-left: 6px;
-            transition: all 0.4s ease;
+            transition: all 0.3s ease;
         }
 
         #qrcode img {
@@ -73,6 +73,24 @@
                 transform: scale(1.05);
                 opacity: 1;
             }
+        }
+
+        @keyframes bump {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.25);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .bump {
+            animation: bump 0.3s ease-in-out;
         }
     </style>
 </head>
@@ -119,13 +137,10 @@
             return await res.json();
         }
 
-        function animateTrophyChange() {
+        function animateTrophiesChange() {
             const el = document.getElementById('trophies');
-            el.style.transition = 'transform 0.3s ease';
-            el.style.transform = 'scale(1.2)';
-            setTimeout(() => {
-                el.style.transform = 'scale(1)';
-            }, 300);
+            el.classList.add('bump');
+            setTimeout(() => el.classList.remove('bump'), 300);
         }
 
         async function updateOverlay() {
@@ -136,7 +151,7 @@
 
                 const trophiesEl = document.getElementById('trophies');
                 if (previousTrophies !== null && stats.trophies !== previousTrophies) {
-                    animateTrophyChange();
+                    animateTrophiesChange();
                 }
                 previousTrophies = stats.trophies;
                 trophiesEl.textContent = stats.trophies;
