@@ -143,20 +143,24 @@
                 document.getElementById('club').textContent = stats.club?.name || "Aucun";
 
                 const streakEl = document.getElementById('winstreak');
+                const newStreak = streak.current;
                 const streakText = `${streak.current} / record ${streak.best}`;
 
                 if (previousStreak !== null) {
-                    if (streak.current > previousStreak) {
+                    if (newStreak > previousStreak) {
+                        streakEl.classList.remove("flash-red");
                         streakEl.classList.add("flash-green");
                         setTimeout(() => streakEl.classList.remove("flash-green"), 800);
-                    } else if (streak.current < previousStreak) {
+                    } else if (newStreak < previousStreak) {
+                        streakEl.classList.remove("flash-green");
                         streakEl.classList.add("flash-red");
                         setTimeout(() => streakEl.classList.remove("flash-red"), 800);
                     }
                 }
 
                 streakEl.textContent = streakText;
-                previousStreak = streak.current;
+                previousStreak = newStreak;
+
 
                 const brawlStarsURL = "https://supercell.com/en/games/brawlstars/";
                 QRCode.toDataURL(brawlStarsURL, { width: 100 }, function (err, url) {
