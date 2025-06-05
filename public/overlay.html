@@ -42,20 +42,6 @@
             transition: all 0.4s ease;
         }
 
-        .value.flash-green {
-            background-color: #49e36a;
-            color: #000;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .value.flash-red {
-            background-color: #e94e4e;
-            color: #fff;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
         #qrcode img {
             margin-left: 10px;
             width: 80px;
@@ -115,7 +101,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script>
-        let previousStreak = null;
+        let previousTrophies = null;
 
         async function fetchTag() {
             const res = await fetch('/api/tag');
@@ -133,34 +119,30 @@
             return await res.json();
         }
 
+        function animateTrophyChange() {
+            const el = document.getElementById('trophies');
+            el.style.transition = 'transform 0.3s ease';
+            el.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                el.style.transform = 'scale(1)';
+            }, 300);
+        }
+
         async function updateOverlay() {
             try {
                 const tag = await fetchTag();
                 const stats = await fetchStats(tag);
                 const streak = await fetchWinstreak(tag);
 
-                document.getElementById('trophies').textContent = stats.trophies;
-                document.getElementById('club').textContent = stats.club?.name || "Aucun";
-
-                const streakEl = document.getElementById('winstreak');
-                const newStreak = streak.current;
-                const streakText = `${streak.current} / record ${streak.best}`;
-
-                if (previousStreak !== null) {
-                    if (newStreak > previousStreak) {
-                        streakEl.classList.remove("flash-red");
-                        streakEl.classList.add("flash-green");
-                        setTimeout(() => streakEl.classList.remove("flash-green"), 800);
-                    } else if (newStreak < previousStreak) {
-                        streakEl.classList.remove("flash-green");
-                        streakEl.classList.add("flash-red");
-                        setTimeout(() => streakEl.classList.remove("flash-red"), 800);
-                    }
+                const trophiesEl = document.getElementById('trophies');
+                if (previousTrophies !== null && stats.trophies !== previousTrophies) {
+                    animateTrophyChange();
                 }
+                previousTrophies = stats.trophies;
+                trophiesEl.textContent = stats.trophies;
 
-                streakEl.textContent = streakText;
-                previousStreak = newStreak;
-
+                document.getElementById('club').textContent = stats.club?.name || "Aucun";
+                document.getElementById('winstreak').textContent = `${streak.current} / record ${streak.best}`;
 
                 const brawlStarsURL = "https://supercell.com/en/games/brawlstars/";
                 QRCode.toDataURL(brawlStarsURL, { width: 100 }, function (err, url) {
