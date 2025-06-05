@@ -1,96 +1,102 @@
 const express = require('express');
-const path = require('path');
+const fetch = require('node-fetch');
+const admin = require('firebase-admin');
 const fs = require('fs');
-const { getPlayerStats } = require('./api/brawlstars');
-const { port } = require('./config');
+const path = require('path');
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_KEY_JSON);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: 'https://TON-PROJET-ID.firebaseio.com' // remplace ici
+});
+
+const db = admin.database();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-const TAG_FILE = path.join(__dirname, 'tag.json');
-const WINSTREAK_FILE = path.join(__dirname, 'winstreaks.json');
-
-// Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// JSON utils
-function readJSON(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8'));
-  } catch {
-    return {};
-  }
+const API_KEY = 'VOTRE_CLÉ_API_BRAWLSTARS';
+
+async function getPlayerData(tag) {
+  const url = `https://api.brawlstars.com/v1/players/${encodeURIComponent(tag)}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${API_KEY}` }
+  });
+  if (!res.ok) throw await res.json();
+  return await res.json();
 }
 
-function writeJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-// API : TAG
-app.get('/api/tag', (req, res) => {
-  const data = readJSON(TAG_FILE);
-  res.json({ tag: data.tag });
+// Get current tag
+app.get('/api/tag', async (req, res) => {
+  const snapshot = await db.ref('currentTag').once('value');
+  res.json({ tag: snapshot.val() });
 });
 
-app.post('/api/tag', (req, res) => {
+// Set new tag
+app.post('/api/tag', async (req, res) => {
   const { tag } = req.body;
-  if (!tag || typeof tag !== 'string') {
-    return res.status(400).json({ error: 'Tag invalide' });
-  }
-  writeJSON(TAG_FILE, { tag });
-  res.json({ success: true, tag });
+  await db.ref('currentTag').set(tag);
+  res.sendStatus(200);
 });
 
-// API : STATS
+// Get stats from Brawl Stars API
 app.get('/api/stats/:tag', async (req, res) => {
   try {
-    const data = await getPlayerStats(req.params.tag);
-    res.json(data);
+    const tag = req.params.tag;
+    const data = await getPlayerData(tag);
+    res.json({
+      name: data.name,
+      trophies: data.trophies,
+      club: data.club
+    });
   } catch (err) {
-    console.error('Erreur API:', err.response?.data || err.message);
-    res.status(500).json({ error: 'Erreur API Brawl Stars' });
+    res.status(500).json({ error: 'API Brawl Stars', details: err });
   }
 });
 
-// API : WINSTREAK
-app.get('/api/winstreak/:tag', (req, res) => {
-  const tag = decodeURIComponent(req.params.tag);
-  const all = readJSON(WINSTREAK_FILE);
-  res.json(all[tag] || { current: 0, best: 0, lastTrophies: null });
+// Get winstreak
+app.get('/api/winstreak/:tag', async (req, res) => {
+  const tag = req.params.tag;
+  const snapshot = await db.ref(`winstreaks/${tag}`).once('value');
+  const record = snapshot.val();
+  if (record) {
+    res.json(record);
+  } else {
+    res.json({ current: 0, best: 0, lastTrophies: null });
+  }
 });
 
-app.post('/api/winstreak/:tag', (req, res) => {
-  const tag = decodeURIComponent(req.params.tag);
-  const { newTrophies } = req.body;
+// Update winstreak automatically based on trophies
+app.post('/api/check/:tag', async (req, res) => {
+  const tag = req.params.tag;
+  const data = await getPlayerData(tag);
+  const trophies = data.trophies;
 
-  if (typeof newTrophies !== 'number') {
-    return res.status(400).json({ error: "newTrophies must be a number" });
-  }
+  const ref = db.ref(`winstreaks/${tag}`);
+  const snapshot = await ref.once('value');
+  let record = snapshot.val();
 
-  const all = readJSON(WINSTREAK_FILE);
-  const record = all[tag] || { current: 0, best: 0, lastTrophies: null };
-
-  if (record.lastTrophies !== null) {
-    const delta = newTrophies - record.lastTrophies;
-    if (delta > 0) {
+  if (!record) {
+    record = { current: 0, best: 0, lastTrophies: trophies };
+  } else {
+    const diff = trophies - record.lastTrophies;
+    if (diff > 0) {
       record.current += 1;
-    } else if (delta < 0) {
+      if (record.current > record.best) record.best = record.current;
+    } else if (diff < 0) {
       record.current = 0;
     }
+    record.lastTrophies = trophies;
   }
 
-  record.lastTrophies = newTrophies;
-  record.best = Math.max(record.current, record.best);
-  all[tag] = record;
-  writeJSON(WINSTREAK_FILE, all);
+  await ref.set(record);
   res.json(record);
 });
 
-// Route par défaut
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
-
-app.listen(port, () => {
-  console.log(`✅ Serveur lancé sur http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`✅ Serveur lancé sur http://localhost:${PORT}`);
 });
